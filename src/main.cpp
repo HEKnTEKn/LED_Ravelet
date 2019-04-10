@@ -1,8 +1,10 @@
 #include <Arduino.h>
-#include <Adafruit_NeoPixel.h>
+#include <FastLED.h>
+//#include <Adafruit_NeoPixel.h>
 
-#define PIN 4
+#define NEOPIXEL_PIN 4
 #define NUM_LEDS 20
+CRGB leds[NUM_LEDS];
 // Parameter 1 = number of pixels in strip
 // Parameter 2 = pin number (most are valid)
 // Parameter 3 = pixel type flags, add together as needed:
@@ -10,9 +12,65 @@
 //   NEO_KHZ400  400 KHz (classic 'v1' (not v2) FLORA pixels, WS2811 drivers)
 //   NEO_GRB     Pixels are wired for GRB bitstream (most NeoPixel products)
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
+//Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+
+
 // Heavy inspiration taken from https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectFadeInandFadeOutRedGreenandBlue
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN, NEO_GRB + NEO_KHZ800);
+
+
 int randomChoice;
+
+
+//prototypes
+
+void showStrip();
+void setPixel(int, byte, byte, byte);
+void setAll(byte, byte, byte);
+void RGBLoop();
+void strobe(byte, byte, byte, int, int, int);
+void twinkleRandom(int, int, boolean);
+void leftToRight(byte, byte, byte, int, int, int);
+void rightToLeft(byte, byte, byte, int, int, int);
+void outsideToCenter(byte, byte, byte, int, int, int);
+void centerToOutside(byte, byte, byte, int, int, int);
+void newKITT(byte, byte, byte, int, int, int);
+
+void setup()
+{
+  FastLED.addLeds<WS2811, NEOPIXEL_PIN, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+
+
+  /* USE FOR NEOPIXEL LIBRARY */
+  //strip.begin();
+  //strip.show(); // Initialize all pixels to 'off'
+  
+  randomSeed(analogRead(0));
+  randomChoice = random(1, 5);
+}
+
+
+void loop()
+{
+  // ---> here we call the effect function <---
+  switch (randomChoice)
+  {
+  case 1:
+    RGBLoop();
+    break;
+  case 2:
+    strobe(0xff, 0xff, 0xff, 10, 50, 1000);
+    break;
+  case 3:
+    twinkleRandom(20, 100, false);
+    break;
+  case 4:
+    newKITT(0xff, 0, 0, 8, 10, 50);
+    break;
+  default:
+    break;
+  }
+}
+
 
 void showStrip()
 {
@@ -25,6 +83,7 @@ void showStrip()
   FastLED.show();
 #endif
 }
+
 
 void setPixel(int Pixel, byte red, byte green, byte blue)
 {
@@ -40,6 +99,7 @@ void setPixel(int Pixel, byte red, byte green, byte blue)
 #endif
 }
 
+
 void setAll(byte red, byte green, byte blue)
 {
   for (int i = 0; i < NUM_LEDS; i++)
@@ -49,23 +109,6 @@ void setAll(byte red, byte green, byte blue)
   showStrip();
 }
 
-static void chase(uint32_t c)
-{
-  for (uint16_t i = 0; i < strip.numPixels() + 4; i++)
-  {
-    strip.setPixelColor(i, c);     // Draw new pixel
-    strip.setPixelColor(i - 4, 0); // Erase pixel a few steps back
-    strip.show();
-    delay(25);
-  }
-}
-
-void chaseDriver()
-{
-  chase(strip.Color(255, 0, 0)); // Red
-  chase(strip.Color(0, 255, 0)); // Green
-  chase(strip.Color(0, 0, 255)); // Blue
-}
 
 void RGBLoop()
 {
@@ -110,7 +153,8 @@ void RGBLoop()
   }
 }
 
-void Strobe(byte red, byte green, byte blue, int StrobeCount, int FlashDelay, int EndPause)
+
+void strobe(byte red, byte green, byte blue, int StrobeCount, int FlashDelay, int EndPause)
 {
   for (int j = 0; j < StrobeCount; j++)
   {
@@ -125,7 +169,7 @@ void Strobe(byte red, byte green, byte blue, int StrobeCount, int FlashDelay, in
   delay(EndPause);
 }
 
-void TwinkleRandom(int Count, int SpeedDelay, boolean OnlyOne)
+void twinkleRandom(int Count, int SpeedDelay, boolean OnlyOne)
 {
   setAll(0, 0, 0);
 
@@ -143,7 +187,7 @@ void TwinkleRandom(int Count, int SpeedDelay, boolean OnlyOne)
   delay(SpeedDelay);
 }
 
-void CenterToOutside(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
+void centerToOutside(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
   for (int i = ((NUM_LEDS - EyeSize) / 2); i >= 0; i--)
   {
@@ -169,7 +213,7 @@ void CenterToOutside(byte red, byte green, byte blue, int EyeSize, int SpeedDela
   delay(ReturnDelay);
 }
 
-void OutsideToCenter(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
+void outsideToCenter(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
   for (int i = 0; i <= ((NUM_LEDS - EyeSize) / 2); i++)
   {
@@ -195,7 +239,7 @@ void OutsideToCenter(byte red, byte green, byte blue, int EyeSize, int SpeedDela
   delay(ReturnDelay);
 }
 
-void LeftToRight(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
+void leftToRight(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
   for (int i = 0; i < NUM_LEDS - EyeSize - 2; i++)
   {
@@ -212,7 +256,7 @@ void LeftToRight(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, i
   delay(ReturnDelay);
 }
 
-void RightToLeft(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
+void rightToLeft(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
   for (int i = NUM_LEDS - EyeSize - 2; i > 0; i--)
   {
@@ -229,49 +273,14 @@ void RightToLeft(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, i
   delay(ReturnDelay);
 }
 
-void NewKITT(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
+void newKITT(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
-  RightToLeft(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
-  LeftToRight(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
-  OutsideToCenter(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
-  CenterToOutside(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
-  LeftToRight(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
-  RightToLeft(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
-  OutsideToCenter(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
-  CenterToOutside(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
-}
-
-void setup()
-{
-  strip.begin();
-  strip.show(); // Initialize all pixels to 'off'
-  
-  randomSeed(analogRead(0));
-  randomChoice = random(1, 5);
-}
-
-void loop()
-{
-  // ---> here we call the effect function <---
-
-  switch (randomChoice)
-  {
-  case 1:
-    chaseDriver();
-    break;
-  case 2:
-    RGBLoop();
-    break;
-  case 3:
-    Strobe(0xff, 0xff, 0xff, 10, 50, 1000);
-    break;
-  case 4:
-    TwinkleRandom(20, 100, false);
-    break;
-  case 5:
-    NewKITT(0xff, 0, 0, 8, 10, 50);
-    break;
-  default:
-    break;
-  }
+  rightToLeft(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
+  leftToRight(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
+  outsideToCenter(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
+  centerToOutside(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
+  leftToRight(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
+  rightToLeft(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
+  outsideToCenter(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
+  centerToOutside(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
 }
