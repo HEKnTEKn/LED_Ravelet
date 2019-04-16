@@ -46,7 +46,7 @@ void newKITT(byte, byte, byte, int, int, int);
 void cylonBounce(byte, byte, byte, int, int, int);
 void rainbowCycle(int);
 void fire(int, int, int);
-void bouncingBalls(byte, byte, byte, int);
+void bouncingColoredBalls(int, byte[][3]);
 void meteorRain(byte, byte, byte, byte, byte, boolean, int);
 void flashlight(byte, byte, byte);
 
@@ -82,37 +82,60 @@ void loop()
   switch (selection)
   {
     case 0:
+    {
       RGBLoop();
       break;
+    }
     case 1:
+    {
       twinkleRandom(20, 100, false);
       break;
+    }
     case 2:
+    {
       rainbowCycle(20);
       break;
+    }
     case 3:
+    {
       cylonBounce(0xff, 0, 0, 4, 10, 50);
       break;
+    }
     case 4:
+    {  
       newKITT(0xff, 0, 0, 8, 10, 50);
       break;
+    }
     case 5:
-      bouncingBalls(0xff,0,0, 3);
+    { 
+      byte colors[3][3] = {{0xff, 0,0}, {0xff, 0xff, 0xff}, {0, 0, 0xff}};
+      bouncingColoredBalls(3, colors);
       break;
+    }
     case 6:
+    {
       fire(55,120,15);
       break;
+    }
     case 7:
+    {
       meteorRain(0xff,0xff,0xff,10, 64, true, 30);
       break;
+    }
     case 8:
+    {  
       strobe(0xff, 0xff, 0xff, 10, 50, 1000);
       break;
+    }
     case 9:
+    {  
       flashlight(0xff, 0xff, 0xff);
       break;
+    }
     default:
+    {  
       break;
+    }
   }
 }
 
@@ -584,35 +607,35 @@ void fire(int Cooling, int Sparking, int SpeedDelay)
 }
 
 
-void bouncingBalls(byte red, byte green, byte blue, int ballCount)
+void bouncingColoredBalls(int BallCount, byte colors[][3])
 {
   float Gravity = -9.81;
-  int startHeight = 1;
+  int StartHeight = 1;
   
-  float Height[ballCount];
-  float ImpactVelocityStart = sqrt( -2 * Gravity * startHeight );
-  float ImpactVelocity[ballCount];
-  float TimeSinceLastBounce[ballCount];
-  int   Position[ballCount];
-  long  ClockTimeSinceLastBounce[ballCount];
-  float Dampening[ballCount];
+  float Height[BallCount];
+  float ImpactVelocityStart = sqrt(-2 * Gravity * StartHeight);
+  float ImpactVelocity[BallCount];
+  float TimeSinceLastBounce[BallCount];
+  int   Position[BallCount];
+  long  ClockTimeSinceLastBounce[BallCount];
+  float Dampening[BallCount];
   
-  for (int i = 0 ; i < ballCount ; i++)
+  for (int i = 0 ; i < BallCount ; i++)
   {   
     ClockTimeSinceLastBounce[i] = millis();
-    Height[i] = startHeight;
+    Height[i] = StartHeight;
     Position[i] = 0; 
     ImpactVelocity[i] = ImpactVelocityStart;
     TimeSinceLastBounce[i] = 0;
-    Dampening[i] = 0.90 - float(i)/pow(ballCount,2); 
+    Dampening[i] = 0.90 - float(i) / pow(BallCount,2); 
   }
 
   while (true)
   {
-    for (int i = 0 ; i < ballCount ; i++)
+    for (int i = 0 ; i < BallCount ; i++)
     {
       TimeSinceLastBounce[i] =  millis() - ClockTimeSinceLastBounce[i];
-      Height[i] = 0.5 * Gravity * pow( TimeSinceLastBounce[i]/1000 , 2.0 ) + ImpactVelocity[i] * TimeSinceLastBounce[i]/1000;
+      Height[i] = 0.5 * Gravity * pow(TimeSinceLastBounce[i] / 1000 , 2.0 ) + ImpactVelocity[i] * TimeSinceLastBounce[i] / 1000;
   
       if ( Height[i] < 0 )
       {                      
@@ -620,24 +643,23 @@ void bouncingBalls(byte red, byte green, byte blue, int ballCount)
         ImpactVelocity[i] = Dampening[i] * ImpactVelocity[i];
         ClockTimeSinceLastBounce[i] = millis();
   
-        if ( ImpactVelocity[i] < 0.01 )
+        if (ImpactVelocity[i] < 0.01)
         {
           ImpactVelocity[i] = ImpactVelocityStart;
         }
       }
-      Position[i] = round( Height[i] * (NUM_LEDS - 1) / startHeight);
+      Position[i] = round( Height[i] * (NUM_LEDS - 1) / StartHeight);
     }
   
-    for (int i = 0 ; i < ballCount ; i++)
+    for (int i = 0 ; i < BallCount ; i++)
     {
-      setPixel(Position[i],red,green,blue);
+      setPixel(Position[i],colors[i][0],colors[i][1],colors[i][2]);
     }
     
     showStrip();
     setAll(0,0,0);
   }
 }
-
 
 void fadeToBlack(int ledNo, byte fadeValue)
 {
