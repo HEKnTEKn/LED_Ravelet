@@ -1,5 +1,6 @@
 {
     "programmer": "ArduinoISP",
     "board": "adafruit:samd:adafruit_trinket_m0",
-    "sketch": "src\\main.ino"
+    "sketch": "src\\main.ino",
+    "port": "COM13"
 }
