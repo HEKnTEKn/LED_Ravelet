@@ -3,7 +3,7 @@
 #include <IRremote.h>
 //#include <Adafruit_NeoPixel.h>
 
-#define NUM_LEDS 20
+#define NUM_LEDS 6
 CRGB leds[NUM_LEDS];
 // Parameter 1 = number of pixels in strip
 // Parameter 2 = pin number (most are valid)
@@ -16,39 +16,30 @@ CRGB leds[NUM_LEDS];
 
 //Heavy inspiration taken from https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectFadeInandFadeOutRedGreenandBlue
 
-const int pixelDataPin = 4;
-const int pixelClockPin = 2;
-const int IRReceiver = 3; // Signal Pin of IR receiver to Arduino
+const int pixelDataPin = 3;
+const int pixelClockPin = 5;
+const int IRReceiver = 9; // Signal Pin of IR receiver to Arduino
 
 /*-----( Declare objects )-----*/
 IRrecv irrecv(IRReceiver); // create instance of 'irrecv'
 
-volatile int selection;
-volatile int brightness;
+int selection;
+int brightness;
 
-//prototypes (helper functions not included)
-
-bool translateIR(uint32_t);
-void RGBLoop();
-void strobe(byte, byte, byte, int, int, int);
-void twinkleRandom(int, int, boolean);
-void cylonBounce(byte, byte, byte, int, int, int);
-void newKITT(byte, byte, byte, int, int, int);
-void rainbowCycle(int);
-void fire(int, int, int);
-void bouncingColoredBalls(int, byte[][3]);
-void meteorRain(byte, byte, byte, byte, byte, boolean, int);
-void flashlight(byte, byte, byte);
 
 void setup()
 {
-  FastLED.addLeds<LPD8806, pixelDataPin, pixelClockPin>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  delay( 3000 ); // power-up safety delay
+  //FastLED.addLeds<LED_TYPE, LED_PIN, CLOCK_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+
+  FastLED.addLeds<WS2811, pixelDataPin, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  //FastLED.addLeds<LPD8806, pixelDataPin, pixelClockPin, GBR>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
 
   /* USE FOR NEOPIXEL LIBRARY */
   //strip.begin();
   //strip.show(); // Initialize all pixels to 'off'
 
-  selection = -1;
+  selection = 0;
   brightness = 153;
   FastLED.setBrightness(brightness);
 
@@ -60,7 +51,7 @@ void setup()
 
 //TODO: add in VU meter code
 //TODO: check if this works
-boolean translateIR(uint32_t delayTime) // takes action based on IR code received
+boolean translateIR(unsigned int delayTime) // takes action based on IR code received
 {
   decode_results results; // create instance of 'decode_results'
 
@@ -74,38 +65,39 @@ boolean translateIR(uint32_t delayTime) // takes action based on IR code receive
     case 0xFFA25D:
     {
       Serial.println("POWER");
-      return 1;
+      return true;
     }
     case 0xFFE21D:
     {
       Serial.println("FUNC/STOP");
+      return true;
     }
     case 0xFF629D:
     {
       Serial.println("VOL+");
-      return 1;
+      return true;
     }
     case 0xFF22DD:
     {
       Serial.println("FAST BACK");
       (selection > 0) ? selection-- : selection = 9;
-      return 1;
+      return true;
     }
     case 0xFF02FD:
     {
       Serial.println("PAUSE");
-      return 1;
+      return true;
     }
     case 0xFFC23D:
     {
       Serial.println("FAST FORWARD");
       (selection < 9) ? selection++ : selection = 0;
-      return 1;
+      return true;
     }
     case 0xFFE01F:
     {
       Serial.println("DOWN");
-      return 1;
+      return true;
     }
     case 0xFFA857:
     {
@@ -113,97 +105,97 @@ boolean translateIR(uint32_t delayTime) // takes action based on IR code receive
       if (brightness > 0)
         brightness -= 51;
       FastLED.setBrightness(brightness);
-      return 1;
+      return true;
     }
     case 0xFF906F:
     {
       Serial.println("UP");
-      return 1;
+      return true;
     }
     case 0xFF9867:
     {
       Serial.println("EQ");
-      return 1;
+      return true;
     }
     case 0xFFB04F:
     {
       Serial.println("ST/REPT");
-      return 1;
+      return true;
     }
     case 0xFF6897:
     {
       Serial.println("0");
       selection = 0;
-      return 1;
+      return true;
     }
     case 0xFF30CF:
     {
       Serial.println("1");
       selection = 1;
-      return 1;
+      return true;
     }
     case 0xFF18E7:
     {
       Serial.println("2");
       selection = 2;
-      return 1;
+      return true;
     }
     case 0xFF7A85:
     {
       Serial.println("3");
       selection = 3;
-      return 1;
+      return true;
     }
     case 0xFF10EF:
     {
       Serial.println("4");
       selection = 4;
-      return 1;
+      return true;
     }
     case 0xFF38C7:
     {
       Serial.println("5");
       selection = 5;
-      return 1;
+      return true;
     }
     case 0xFF5AA5:
     {
       Serial.println("6");
       selection = 6;
-      return 1;
+      return true;
     }
     case 0xFF42BD:
     {
       Serial.println("7");
       selection = 7;
-      return 1;
+      return true;
     }
     case 0xFF4AB5:
     {
       Serial.println("8");
       selection = 8;
-      return 1;
+      return true;
     }
     case 0xFF52AD:
     {
       Serial.println("9");
       selection = 9;
-      return 1;
+      return true;
     }
     case 0xFFFFFFFF:
     {
       Serial.println(" REPEAT");
-      return 0;
+      return false;
     }
 
     default:
     {
       Serial.print(" other button   ");
       Serial.println(results.value);
-      return 0;
+      return false;
     }
     }
-    return 0;
+    return false;
   }
 }
 
@@ -264,8 +256,8 @@ void RGBLoop()
         
       }
       showStrip();
-      //delay(3);
-      if (translateIR(1)) return;
+      delay(3);
+      if (translateIR(80)) {return;}
     }
     // Fade OUT
     for (int k = 255; k >= 0; k--)
@@ -283,8 +275,8 @@ void RGBLoop()
         break;
       }
       showStrip();
-      //delay(3);
-      if (translateIR(3)) return;
+      delay(3);
+      if (translateIR(80)) {return;}
     }
   }
 }
@@ -315,7 +307,7 @@ void twinkleRandom(int Count, int SpeedDelay, boolean OnlyOne)
     setPixel(random(NUM_LEDS), random(0, 255), random(0, 255), random(0, 255));
     showStrip();
     //delay(SpeedDelay);
-    if (translateIR(SpeedDelay)) return;
+    if (translateIR(SpeedDelay)) {return;}
     if (OnlyOne)
     {
       setAll(0, 0, 0);
@@ -323,7 +315,7 @@ void twinkleRandom(int Count, int SpeedDelay, boolean OnlyOne)
   }
 
   //delay(SpeedDelay);
-  if (translateIR(SpeedDelay)) return;
+  if (translateIR(SpeedDelay)) {return;}
 }
 
 void cylonBounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
@@ -339,7 +331,7 @@ void cylonBounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, i
     setPixel(i + EyeSize + 1, red / 10, green / 10, blue / 10);
     showStrip();
     //delay(SpeedDelay);
-    if (translateIR(SpeedDelay)) return;
+    if (translateIR(SpeedDelay)) {return;}
   }
 
   //delay(ReturnDelay);
@@ -356,7 +348,7 @@ void cylonBounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, i
     setPixel(i + EyeSize + 1, red / 10, green / 10, blue / 10);
     showStrip();
     //delay(SpeedDelay);
-    if (translateIR(SpeedDelay)) return;
+    if (translateIR(SpeedDelay)) {return;}
   }
 
   //delay(ReturnDelay);
@@ -385,7 +377,7 @@ void centerToOutside(byte red, byte green, byte blue, int EyeSize, int SpeedDela
 
     showStrip();
     //delay(SpeedDelay);
-    if (translateIR(SpeedDelay)) return;
+    if (translateIR(SpeedDelay)) {return;}
   }
   //delay(ReturnDelay);
   if (translateIR(ReturnDelay)) return;
@@ -413,10 +405,10 @@ void outsideToCenter(byte red, byte green, byte blue, int EyeSize, int SpeedDela
 
     showStrip();
     //delay(SpeedDelay);
-    if (translateIR(SpeedDelay)) return;
+    if (translateIR(SpeedDelay)) {return;}
   }
   //delay(ReturnDelay);
-  if (translateIR(SpeedDelay)) return;
+  if (translateIR(SpeedDelay)) {return;}
 }
 
 void leftToRight(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
@@ -432,7 +424,7 @@ void leftToRight(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, i
     setPixel(i + EyeSize + 1, red / 10, green / 10, blue / 10);
     showStrip();
     //delay(SpeedDelay);
-    if (translateIR(SpeedDelay)) return;
+    if (translateIR(SpeedDelay)) {return;}
 
   }
   //delay(ReturnDelay);
@@ -452,12 +444,13 @@ void rightToLeft(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, i
     setPixel(i + EyeSize + 1, red / 10, green / 10, blue / 10);
     showStrip();
     //delay(SpeedDelay);
-    if (translateIR(SpeedDelay)) return;
+    if (translateIR(SpeedDelay)) {return;}
   }
   //delay(ReturnDelay);
   if (translateIR(ReturnDelay)) return;
 }
 
+//TODO: fix newKITT, returns in helper functions do not return to loop
 void newKITT(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
   rightToLeft(red, green, blue, EyeSize, SpeedDelay, ReturnDelay);
@@ -501,7 +494,7 @@ byte *wheel(byte wheelPos)
 void rainbowCycle(int SpeedDelay)
 {
   byte *c;
-  uint16_t i, j;
+  unsigned int i, j;
 
   for (j = 0; j < 256 * 5; j++)
   { // 5 cycles of all colors on wheel
@@ -512,7 +505,7 @@ void rainbowCycle(int SpeedDelay)
     }
     showStrip();
     //delay(SpeedDelay);
-    if (translateIR(SpeedDelay)) return;
+    if (translateIR(SpeedDelay)) {return;}
   }
 }
 
@@ -582,9 +575,9 @@ void fire(int Cooling, int Sparking, int SpeedDelay)
 
   showStrip();
   //delay(SpeedDelay);
-  if (translateIR(SpeedDelay)) return;
+  if (translateIR(SpeedDelay)) {return;}
 }
-
+//TODO: fix function to check for IR when relevant
 void bouncingColoredBalls(int BallCount, byte colors[][3])
 {
   float Gravity = -9.81;
@@ -677,7 +670,7 @@ void meteorRain(byte red, byte green, byte blue, byte meteorSize, byte meteorTra
       {
         fadeToBlack(j, meteorTrailDecay);
       }
-      if (translateIR(SpeedDelay)) return;
+      if (translateIR(SpeedDelay)) {return;}
 
     }
 
@@ -688,12 +681,12 @@ void meteorRain(byte red, byte green, byte blue, byte meteorSize, byte meteorTra
       {
         setPixel(i - j, red, green, blue);
       }
-      if (translateIR(SpeedDelay)) return;
+      if (translateIR(SpeedDelay)) {return;}
     }
 
     showStrip();
     //delay(SpeedDelay);
-    if (translateIR(SpeedDelay)) return;
+    if (translateIR(SpeedDelay)) {return;}
   }
 }
 
@@ -768,6 +761,6 @@ void loop()
     break;
   }
   }
-  if (translateIR(1)) return;
+  if (translateIR(250)) return;
   Serial.println("No IR");
 }
