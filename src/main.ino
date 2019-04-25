@@ -1,10 +1,10 @@
 #include <Arduino.h>
 #include <FastLED.h>
-#include <IRremote.h>
+#include <IRLibAll.h>
+//#include <IRremote.h>
 //#include <Adafruit_NeoPixel.h>
 
-#define NUM_LEDS 6
-CRGB leds[NUM_LEDS];
+
 // Parameter 1 = number of pixels in strip
 // Parameter 2 = pin number (most are valid)
 // Parameter 3 = pixel type flags, add together as needed:
@@ -12,16 +12,23 @@ CRGB leds[NUM_LEDS];
 //   NEO_KHZ400  400 KHz (classic 'v1' (not v2) FLORA pixels, WS2811 drivers)
 //   NEO_GRB     Pixels are wired for GRB bitstream (most NeoPixel products)
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
-//Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+//Adafruit_NeoPixel strip = Adafruit_NeoPixel(numLEDs, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
 //Heavy inspiration taken from https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectFadeInandFadeOutRedGreenandBlue
+const int numLEDs = 6;
+
 
 const int pixelDataPin = 3;
 const int pixelClockPin = 5;
-const int IRReceiver = 9; // Signal Pin of IR receiver to Arduino
+const int irReceiverPin = 9; // Signal Pin of IR receiver to Arduino
 
 /*-----( Declare objects )-----*/
-IRrecv irrecv(IRReceiver); // create instance of 'irrecv'
+CRGB leds[numLEDs];
+
+IRrecvPCI irReceiver(irReceiverPin);
+//IRrecv irReceiver(irReceiverPin); // create instance of 'irReceiver'
+
+IRdecode decoder;   
 
 int selection;
 int brightness;
@@ -30,10 +37,10 @@ int brightness;
 void setup()
 {
   delay( 3000 ); // power-up safety delay
-  //FastLED.addLeds<LED_TYPE, LED_PIN, CLOCK_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+  //FastLED.addLeds<LED_TYPE, LED_PIN, CLOCK_PIN, COLOR_ORDER>(leds, numLEDs).setCorrection( TypicalLEDStrip );
 
-  FastLED.addLeds<WS2811, pixelDataPin, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-  //FastLED.addLeds<LPD8806, pixelDataPin, pixelClockPin, GBR>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  FastLED.addLeds<WS2811, pixelDataPin, GRB>(leds, numLEDs).setCorrection(TypicalLEDStrip);
+  //FastLED.addLeds<LPD8806, pixelDataPin, pixelClockPin, GBR>(leds, numLEDs).setCorrection(TypicalLEDStrip);
 
   /* USE FOR NEOPIXEL LIBRARY */
   //strip.begin();
@@ -44,154 +51,180 @@ void setup()
   FastLED.setBrightness(brightness);
 
   Serial.begin(9600);
-  irrecv.enableIRIn(); // Start the receiver
+  //irReceiver.enableIRIn(); // Start the receiver
   Serial.println("setup passed");
 
 }
 
 //TODO: add in VU meter code
 //TODO: check if this works
+//NOTE: current test: only enable IR in translate function, and disable everywhere else.
 boolean translateIR(unsigned int delayTime) // takes action based on IR code received
 {
-  decode_results results; // create instance of 'decode_results'
+  irReceiver.enableIRIn();
 
   delay(delayTime);
 
-  if (irrecv.decode(&results))
+  if (irReceiver.getResults())
   {
-    irrecv.resume();
-    switch (results.value)
+    decoder.decode();
+
+    switch (decoder.value)
     {
     case 0xFFA25D:
     {
       Serial.println("POWER");
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFFE21D:
     {
       Serial.println("FUNC/STOP");
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF629D:
     {
       Serial.println("VOL+");
+      if (brightness < 255) brightness += 51;
+      FastLED.setBrightness(brightness);    
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF22DD:
     {
       Serial.println("FAST BACK");
       (selection > 0) ? selection-- : selection = 9;
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF02FD:
     {
       Serial.println("PAUSE");
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFFC23D:
     {
       Serial.println("FAST FORWARD");
       (selection < 9) ? selection++ : selection = 0;
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFFE01F:
     {
       Serial.println("DOWN");
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFFA857:
     {
       Serial.println("VOL-");
-      if (brightness > 0)
-        brightness -= 51;
+      if (brightness > 0) brightness -= 51;
       FastLED.setBrightness(brightness);
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF906F:
     {
       Serial.println("UP");
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF9867:
     {
       Serial.println("EQ");
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFFB04F:
     {
       Serial.println("ST/REPT");
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF6897:
     {
       Serial.println("0");
       selection = 0;
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF30CF:
     {
       Serial.println("1");
       selection = 1;
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF18E7:
     {
       Serial.println("2");
       selection = 2;
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF7A85:
     {
       Serial.println("3");
       selection = 3;
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF10EF:
     {
       Serial.println("4");
       selection = 4;
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF38C7:
     {
       Serial.println("5");
       selection = 5;
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF5AA5:
     {
       Serial.println("6");
       selection = 6;
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF42BD:
     {
       Serial.println("7");
       selection = 7;
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF4AB5:
     {
       Serial.println("8");
       selection = 8;
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFF52AD:
     {
       Serial.println("9");
       selection = 9;
+      irReceiver.disableIRIn();
       return true;
     }
     case 0xFFFFFFFF:
     {
       Serial.println(" REPEAT");
+      irReceiver.disableIRIn();
       return false;
     }
 
     default:
     {
-      Serial.print(" other button   ");
-      Serial.println(results.value);
+      Serial.print(" other button:   ");
+      Serial.println(decoder.value);
+      irReceiver.disableIRIn();
       return false;
     }
     }
@@ -228,7 +261,7 @@ void setPixel(int Pixel, byte red, byte green, byte blue)
 
 void setAll(byte red, byte green, byte blue)
 {
-  for (int i = 0; i < NUM_LEDS; i++)
+  for (int i = 0; i < numLEDs; i++)
   {
     setPixel(i, red, green, blue);
   }
@@ -256,8 +289,8 @@ void RGBLoop()
         
       }
       showStrip();
-      delay(3);
-      if (translateIR(80)) {return;}
+      //delay(3);
+      if (translateIR(3)) return;
     }
     // Fade OUT
     for (int k = 255; k >= 0; k--)
@@ -275,8 +308,8 @@ void RGBLoop()
         break;
       }
       showStrip();
-      delay(3);
-      if (translateIR(80)) {return;}
+      //delay(3);
+      if (translateIR(3)) return;
     }
   }
 }
@@ -304,7 +337,7 @@ void twinkleRandom(int Count, int SpeedDelay, boolean OnlyOne)
 
   for (int i = 0; i < Count; i++)
   {
-    setPixel(random(NUM_LEDS), random(0, 255), random(0, 255), random(0, 255));
+    setPixel(random(numLEDs), random(0, 255), random(0, 255), random(0, 255));
     showStrip();
     //delay(SpeedDelay);
     if (translateIR(SpeedDelay)) {return;}
@@ -320,7 +353,7 @@ void twinkleRandom(int Count, int SpeedDelay, boolean OnlyOne)
 
 void cylonBounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
-  for (int i = 0; i < NUM_LEDS - EyeSize - 2; i++)
+  for (int i = 0; i < numLEDs - EyeSize - 2; i++)
   {
     setAll(0, 0, 0);
     setPixel(i, red / 10, green / 10, blue / 10);
@@ -337,7 +370,7 @@ void cylonBounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, i
   //delay(ReturnDelay);
   if (translateIR(ReturnDelay)) return;
 
-  for (int i = NUM_LEDS - EyeSize - 2; i > 0; i--)
+  for (int i = numLEDs - EyeSize - 2; i > 0; i--)
   {
     setAll(0, 0, 0);
     setPixel(i, red / 10, green / 10, blue / 10);
@@ -357,7 +390,7 @@ void cylonBounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, i
 
 void centerToOutside(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
-  for (int i = ((NUM_LEDS - EyeSize) / 2); i >= 0; i--)
+  for (int i = ((numLEDs - EyeSize) / 2); i >= 0; i--)
   {
     setAll(0, 0, 0);
 
@@ -368,12 +401,12 @@ void centerToOutside(byte red, byte green, byte blue, int EyeSize, int SpeedDela
     }
     setPixel(i + EyeSize + 1, red / 10, green / 10, blue / 10);
 
-    setPixel(NUM_LEDS - i, red / 10, green / 10, blue / 10);
+    setPixel(numLEDs - i, red / 10, green / 10, blue / 10);
     for (int j = 1; j <= EyeSize; j++)
     {
-      setPixel(NUM_LEDS - i - j, red, green, blue);
+      setPixel(numLEDs - i - j, red, green, blue);
     }
-    setPixel(NUM_LEDS - i - EyeSize - 1, red / 10, green / 10, blue / 10);
+    setPixel(numLEDs - i - EyeSize - 1, red / 10, green / 10, blue / 10);
 
     showStrip();
     //delay(SpeedDelay);
@@ -385,7 +418,7 @@ void centerToOutside(byte red, byte green, byte blue, int EyeSize, int SpeedDela
 
 void outsideToCenter(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
-  for (int i = 0; i <= ((NUM_LEDS - EyeSize) / 2); i++)
+  for (int i = 0; i <= ((numLEDs - EyeSize) / 2); i++)
   {
     setAll(0, 0, 0);
 
@@ -396,12 +429,12 @@ void outsideToCenter(byte red, byte green, byte blue, int EyeSize, int SpeedDela
     }
     setPixel(i + EyeSize + 1, red / 10, green / 10, blue / 10);
 
-    setPixel(NUM_LEDS - i, red / 10, green / 10, blue / 10);
+    setPixel(numLEDs - i, red / 10, green / 10, blue / 10);
     for (int j = 1; j <= EyeSize; j++)
     {
-      setPixel(NUM_LEDS - i - j, red, green, blue);
+      setPixel(numLEDs - i - j, red, green, blue);
     }
-    setPixel(NUM_LEDS - i - EyeSize - 1, red / 10, green / 10, blue / 10);
+    setPixel(numLEDs - i - EyeSize - 1, red / 10, green / 10, blue / 10);
 
     showStrip();
     //delay(SpeedDelay);
@@ -413,7 +446,7 @@ void outsideToCenter(byte red, byte green, byte blue, int EyeSize, int SpeedDela
 
 void leftToRight(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
-  for (int i = 0; i < NUM_LEDS - EyeSize - 2; i++)
+  for (int i = 0; i < numLEDs - EyeSize - 2; i++)
   {
     setAll(0, 0, 0);
     setPixel(i, red / 10, green / 10, blue / 10);
@@ -433,7 +466,7 @@ void leftToRight(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, i
 
 void rightToLeft(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
-  for (int i = NUM_LEDS - EyeSize - 2; i > 0; i--)
+  for (int i = numLEDs - EyeSize - 2; i > 0; i--)
   {
     setAll(0, 0, 0);
     setPixel(i, red / 10, green / 10, blue / 10);
@@ -498,9 +531,9 @@ void rainbowCycle(int SpeedDelay)
 
   for (j = 0; j < 256 * 5; j++)
   { // 5 cycles of all colors on wheel
-    for (i = 0; i < NUM_LEDS; i++)
+    for (i = 0; i < numLEDs; i++)
     {
-      c = wheel(((i * 256 / NUM_LEDS) + j) & 255);
+      c = wheel(((i * 256 / numLEDs) + j) & 255);
       setPixel(i, *c, *(c + 1), *(c + 2));
     }
     showStrip();
@@ -535,13 +568,13 @@ void setPixelHeatColor(int Pixel, byte temperature)
 
 void fire(int Cooling, int Sparking, int SpeedDelay)
 {
-  static byte heat[NUM_LEDS];
+  static byte heat[numLEDs];
   int cooldown;
 
   // Step 1.  Cool down every cell a little
-  for (int i = 0; i < NUM_LEDS; i++)
+  for (int i = 0; i < numLEDs; i++)
   {
-    cooldown = random(0, ((Cooling * 10) / NUM_LEDS) + 2);
+    cooldown = random(0, ((Cooling * 10) / numLEDs) + 2);
 
     if (cooldown > heat[i])
     {
@@ -554,7 +587,7 @@ void fire(int Cooling, int Sparking, int SpeedDelay)
   }
 
   // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-  for (int k = NUM_LEDS - 1; k >= 2; k--)
+  for (int k = numLEDs - 1; k >= 2; k--)
   {
     heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
   }
@@ -568,7 +601,7 @@ void fire(int Cooling, int Sparking, int SpeedDelay)
   }
 
   // Step 4.  Convert heat to LED colors
-  for (int j = 0; j < NUM_LEDS; j++)
+  for (int j = 0; j < numLEDs; j++)
   {
     setPixelHeatColor(j, heat[j]);
   }
@@ -619,7 +652,7 @@ void bouncingColoredBalls(int BallCount, byte colors[][3])
           ImpactVelocity[i] = ImpactVelocityStart;
         }
       }
-      Position[i] = round(Height[i] * (NUM_LEDS - 1) / StartHeight);
+      Position[i] = round(Height[i] * (numLEDs - 1) / StartHeight);
     }
 
     for (int i = 0; i < BallCount; i++)
@@ -661,10 +694,10 @@ void meteorRain(byte red, byte green, byte blue, byte meteorSize, byte meteorTra
 {
   setAll(0, 0, 0);
 
-  for (int i = 0; i < NUM_LEDS + NUM_LEDS; i++)
+  for (int i = 0; i < numLEDs + numLEDs; i++)
   {
     // fade brightness all LEDs one step
-    for (int j = 0; j < NUM_LEDS; j++)
+    for (int j = 0; j < numLEDs; j++)
     {
       if ((!meteorRandomDecay) || (random(10) > 5))
       {
@@ -677,7 +710,7 @@ void meteorRain(byte red, byte green, byte blue, byte meteorSize, byte meteorTra
     // draw meteor
     for (int j = 0; j < meteorSize; j++)
     {
-      if ((i - j < NUM_LEDS) && (i - j >= 0))
+      if ((i - j < numLEDs) && (i - j >= 0))
       {
         setPixel(i - j, red, green, blue);
       }
