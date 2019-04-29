@@ -20,13 +20,12 @@ const int numLEDs = 6;
 
 const int pixelDataPin = 3;
 const int pixelClockPin = 5;
-const int irReceiverPin = 9; // Signal Pin of IR receiver to Arduino
+const int irReceiverPin = 2; // Signal Pin of IR receiver to Arduino
 
 /*-----( Declare objects )-----*/
 CRGB leds[numLEDs];
 
 IRrecvPCI irReceiver(irReceiverPin);
-//IRrecv irReceiver(irReceiverPin); // create instance of 'irReceiver'
 
 IRdecode decoder;   
 
@@ -51,7 +50,7 @@ void setup()
   FastLED.setBrightness(brightness);
 
   Serial.begin(9600);
-  //irReceiver.enableIRIn(); // Start the receiver
+  irReceiver.enableIRIn(); // Start the receiver
   Serial.println("setup passed");
 
 }
@@ -61,7 +60,6 @@ void setup()
 //NOTE: current test: only enable IR in translate function, and disable everywhere else.
 boolean translateIR(unsigned int delayTime) // takes action based on IR code received
 {
-  irReceiver.enableIRIn();
 
   delay(delayTime);
 
@@ -69,166 +67,170 @@ boolean translateIR(unsigned int delayTime) // takes action based on IR code rec
   {
     decoder.decode();
 
-    switch (decoder.value)
+    if (decoder.protocolNum == NECX)
     {
-    case 0xFFA25D:
-    {
-      Serial.println("POWER");
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFFE21D:
-    {
-      Serial.println("FUNC/STOP");
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF629D:
-    {
-      Serial.println("VOL+");
-      if (brightness < 255) brightness += 51;
-      FastLED.setBrightness(brightness);    
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF22DD:
-    {
-      Serial.println("FAST BACK");
-      (selection > 0) ? selection-- : selection = 9;
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF02FD:
-    {
-      Serial.println("PAUSE");
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFFC23D:
-    {
-      Serial.println("FAST FORWARD");
-      (selection < 9) ? selection++ : selection = 0;
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFFE01F:
-    {
-      Serial.println("DOWN");
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFFA857:
-    {
-      Serial.println("VOL-");
-      if (brightness > 0) brightness -= 51;
-      FastLED.setBrightness(brightness);
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF906F:
-    {
-      Serial.println("UP");
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF9867:
-    {
-      Serial.println("EQ");
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFFB04F:
-    {
-      Serial.println("ST/REPT");
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF6897:
-    {
-      Serial.println("0");
-      selection = 0;
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF30CF:
-    {
-      Serial.println("1");
-      selection = 1;
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF18E7:
-    {
-      Serial.println("2");
-      selection = 2;
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF7A85:
-    {
-      Serial.println("3");
-      selection = 3;
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF10EF:
-    {
-      Serial.println("4");
-      selection = 4;
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF38C7:
-    {
-      Serial.println("5");
-      selection = 5;
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF5AA5:
-    {
-      Serial.println("6");
-      selection = 6;
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF42BD:
-    {
-      Serial.println("7");
-      selection = 7;
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF4AB5:
-    {
-      Serial.println("8");
-      selection = 8;
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFF52AD:
-    {
-      Serial.println("9");
-      selection = 9;
-      irReceiver.disableIRIn();
-      return true;
-    }
-    case 0xFFFFFFFF:
-    {
-      Serial.println(" REPEAT");
-      irReceiver.disableIRIn();
-      return false;
-    }
+      switch (decoder.value)
+      {
+        case 0xFFA25D:
+        {
+          Serial.println("POWER");
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFFE21D:
+        {
+          Serial.println("FUNC/STOP");
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF629D:
+        {
+          Serial.println("VOL+");
+          if (brightness < 255) brightness += 51;
+          FastLED.setBrightness(brightness);    
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF22DD:
+        {
+          Serial.println("FAST BACK");
+          (selection > 0) ? selection-- : selection = 9;
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF02FD:
+        {
+          Serial.println("PAUSE");
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFFC23D:
+        {
+          Serial.println("FAST FORWARD");
+          (selection < 9) ? selection++ : selection = 0;
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFFE01F:
+        {
+          Serial.println("DOWN");
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFFA857:
+        {
+          Serial.println("VOL-");
+          if (brightness > 0) brightness -= 51;
+          FastLED.setBrightness(brightness);
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF906F:
+        {
+          Serial.println("UP");
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF9867:
+        {
+          Serial.println("EQ");
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFFB04F:
+        {
+          Serial.println("ST/REPT");
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF6897:
+        {
+          Serial.println("0");
+          selection = 0;
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF30CF:
+        {
+          Serial.println("1");
+          selection = 1;
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF18E7:
+        {
+          Serial.println("2");
+          selection = 2;
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF7A85:
+        {
+          Serial.println("3");
+          selection = 3;
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF10EF:
+        {
+          Serial.println("4");
+          selection = 4;
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF38C7:
+        {
+          Serial.println("5");
+          selection = 5;
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF5AA5:
+        {
+          Serial.println("6");
+          selection = 6;
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF42BD:
+        {
+          Serial.println("7");
+          selection = 7;
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF4AB5:
+        {
+          Serial.println("8");
+          selection = 8;
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFF52AD:
+        {
+          Serial.println("9");
+          selection = 9;
+          irReceiver.disableIRIn();
+          return true;
+        }
+        case 0xFFFFFFFF:
+        {
+          Serial.println(" REPEAT");
+          irReceiver.disableIRIn();
+          return false;
+        }
 
-    default:
-    {
-      Serial.print(" other button:   ");
-      Serial.println(decoder.value);
-      irReceiver.disableIRIn();
+        default:
+        {
+          Serial.print(" other button:   ");
+          Serial.println(decoder.value);
+          irReceiver.disableIRIn();
+          return false;
+        }
+      }
+      irReceiver.enableIRIn();
       return false;
     }
-    }
-    return false;
   }
 }
 
@@ -436,7 +438,7 @@ void outsideToCenter(byte red, byte green, byte blue, int EyeSize, int SpeedDela
     }
     setPixel(numLEDs - i - EyeSize - 1, red / 10, green / 10, blue / 10);
 
-    showStrip();
+    showStrip();  
     //delay(SpeedDelay);
     if (translateIR(SpeedDelay)) {return;}
   }
